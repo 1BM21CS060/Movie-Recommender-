@@ -79,9 +79,13 @@ function displayRecommendations(aiRecommendations, movieDetails) {
     const recommendationsDiv = document.getElementById('recommendations');
     const recommendations = aiRecommendations.split(/\d+\./);
 
+    const movieTitles = []; // Array to store movie titles
+
     movieDetails.forEach((movie, index) => {
         if (movie.Response === "True" && index < recommendations.length - 1) {
             const aiRecommendation = recommendations[index + 1].trim().replace(/\*/g, '');
+            movieTitles.push(movie.Title); // Collect movie titles
+            
             const movieDiv = document.createElement('div');
             movieDiv.className = 'movie';
             movieDiv.innerHTML = `
@@ -107,7 +111,22 @@ function displayRecommendations(aiRecommendations, movieDetails) {
             console.error(`Movie not found or no AI recommendation: ${movie.Error || 'Unknown error'}`);
         }
     });
+
+    // Send movie titles to the server
+    if (movieTitles.length > 0) {
+        fetch('/save-recommendations', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ movieTitles }),
+        })
+        .then(response => response.text())
+        .then(data => console.log('Server Response:', data))
+        .catch(error => console.error('Error:', error));
+    }
 }
+
 
 function toggleFavorite(imdbID) {
     const index = favorites.indexOf(imdbID);
