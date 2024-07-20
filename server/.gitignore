@@ -46,3 +46,8 @@ coverage/
 *.tmp
 *.temp
 
+# Explicitly unignore specific files
+!server.js
+!db.js
+!public/style.css
+!public/script.js
