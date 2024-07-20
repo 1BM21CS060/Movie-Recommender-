@@ -17,6 +17,11 @@ const userInputSchema = new mongoose.Schema({
     }
 });
 
-const collections = mongoose.model('userInputs', userInputSchema);
+const movieTitleSchema = new mongoose.Schema({
+    title: String,
+});
 
-module.exports = { connectDB, collections };
+const collections = mongoose.model('userInputs', userInputSchema);
+const collections1 = mongoose.model('recommendedMovieNames', movieTitleSchema);
+
+module.exports = { connectDB, collections, collections1};
