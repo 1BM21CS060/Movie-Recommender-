@@ -45,5 +45,4 @@ coverage/
 # Temporary files
 *.tmp
 *.temp
-#script
-/script.js
+
