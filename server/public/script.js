@@ -160,3 +160,19 @@ function clearResults() {
     document.getElementById('recommendations').innerHTML = '';
     document.getElementById('error-details').innerHTML = '';
 }
+// Infinite scroll
+window.addEventListener('scroll', () => {
+    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500 && !isLoading) {
+        loadMoreMovies();
+    }
+});
+
+// Initial load
+document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('movie-query');
+    searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            getRecommendations();
+        }
+    });
+});
