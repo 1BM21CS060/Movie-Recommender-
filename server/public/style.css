@@ -144,7 +144,7 @@ button:hover {
     color: var(--secondary-text);
 }
 
-.movie a, .movie button { 
+.movie a { 
     display: inline-block;
     text-decoration: none;
     color: var(--primary-text);
@@ -154,32 +154,10 @@ button:hover {
     margin-top: 0.5rem;
     margin-right: 0.5rem;
     transition: background-color 0.3s ease;
-    border: none;
-    cursor: pointer;
 }
 
-.movie a:hover, .movie button:hover {
+.movie a:hover {
     background-color: var(--button-hover);
-}
-
-.error { 
-    background-color: rgba(255, 0, 0, 0.1);
-    border: 1px solid var(--accent-color);
-    padding: 1rem;
-    margin-top: 1rem;
-    color: var(--accent-color);
-    border-radius: 6px;
-}
-
-#error-details { 
-    background-color: rgba(255, 0, 0, 0.1);
-    border: 1px solid var(--accent-color);
-    padding: 1rem;
-    margin-top: 1rem;
-    white-space: pre-wrap;
-    border-radius: 6px;
-    font-family: monospace;
-    color: var(--accent-color);
 }
 
 .loading { 
