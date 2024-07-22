@@ -26,12 +26,27 @@ nav {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.nav-container i {
+    color: var(--accent-color);
+    margin-bottom: 0.5rem;
 }
 
 nav h1 {
-    font-size: 1.5rem;
+    font-size: 2rem;
     margin: 0;
     color: var(--accent-color);
+}
+
+.tagline {
+    color: var(--secondary-text);
+    font-size: 1rem;
+    margin-top: 0.5rem;
 }
 
 .container { 
@@ -152,12 +167,31 @@ button:hover {
     padding: 0.5rem 1rem;
     border-radius: 4px;
     margin-top: 0.5rem;
-    margin-right: 0.5rem;
     transition: background-color 0.3s ease;
 }
 
 .movie a:hover {
     background-color: var(--button-hover);
+}
+
+.movie-plot {
+    margin-top: 1rem;
+    color: var(--primary-text);
+}
+
+.error, #max-results-message, #no-results-message { 
+    padding: 1rem;
+    margin-top: 1rem;
+    color: var(--secondary-text);
+    text-align: center;
+}
+
+#error-details { 
+    padding: 1rem;
+    margin-top: 1rem;
+    white-space: pre-wrap;
+    font-family: monospace;
+    color: var(--secondary-text);
 }
 
 .loading { 
@@ -188,6 +222,30 @@ footer {
     background-color: var(--background-color);
     color: var(--secondary-text);
     font-size: 0.9rem;
+}
+
+.hidden {
+    display: none;
+}
+
+#back-to-top {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: none;
+    background-color: var(--accent-color);
+    color: var(--primary-text);
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#back-to-top:hover {
+    background-color: var(--button-hover);
 }
 
 @media (max-width: 768px) {
