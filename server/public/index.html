@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vasista AI Movie Recommender</title>
+    <title>AI Movie Sage - Smart Picks, Endless Flicks!</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
@@ -11,14 +11,16 @@
 <body>
     <nav>
         <div class="nav-container">
-            <h1><i class="fas fa-film"></i> Vasista AI Movie Recommender</h1>
+            <i class="fas fa-film fa-2x"></i>
+            <h1>AI Movie Sage</h1>
+            <p class="tagline">Smart Picks, Endless Flicks!</p>
         </div>
     </nav>
     <div class="container">
         <p class="intro-text">Got a movie in mind? Or maybe just a vibe? Type in keywords, titles, similar movies, descriptions, or any random word that pops into your head, and we'll find the perfect flick for you! From action-packed adventures to heartwarming comedies, just start typing and let the magic happen! 🎥✨</p>
         <div class="search-container">
             <input type="text" id="movie-query" placeholder="Enter movie keywords (e.g., Action, Funny, Light Hearted)">
-            <button onclick="getRecommendations()"><i class="fas fa-search"></i> Get Recommendations</button>
+            <button onclick="getRecommendations(true)"><i class="fas fa-search"></i> Get Recommendations</button>
             <button onclick="clearResults()" class="clear-btn"><i class="fas fa-times"></i></button>
         </div>
         <div class="loading" id="loading">
@@ -27,9 +29,16 @@
         </div>
         <div id="recommendations"></div>
         <div id="error-details"></div>
+        <div id="max-results-message" class="hidden">
+            <p>Whoa, movie buff! You've hit the max of 100 recommendations. Try using more keywords to find your next binge-worthy flick!</p>
+        </div>
+        <div id="no-results-message" class="hidden">
+            <p>Oops! No matches found. Try different keywords to discover awesome movies!</p>
+        </div>
     </div>
+    <button id="back-to-top" title="Back to Top"><i class="fas fa-arrow-up"></i></button>
     <footer>
-        <p>© 2024 Vasista AI Movie Recommender. All rights reserved.</p>
+        <p>© 2024 AI Movie Sage. All rights reserved.</p>
     </footer>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="script.js"></script>
