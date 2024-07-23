@@ -61,6 +61,11 @@ async function getRecommendations(isInitialLoad = true) {
             maxResultsMessage.classList.remove('hidden');
             window.removeEventListener('scroll', handleScroll);
         }
+
+        const titlesToSend = uniqueMovies.map(movie => movie.Title);
+        if (titlesToSend.length > 0) {
+            await saveRecommendations(titlesToSend);
+        }
     } catch (error) {
         console.error('Error:', error);
         showError(`An error occurred: ${error.message}`);
@@ -135,17 +140,21 @@ function displayRecommendations(movies) {
         `;
         recommendationsDiv.appendChild(movieDiv);
     });
-    if (movieTitles.length > 0) {
-        fetch('/save-recommendations', {
+}
+
+async function saveRecommendations(movieTitles) {
+    try {
+        const response = await fetch('/save-recommendations', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({ movieTitles }),
-        })
-        .then(response => response.text())
-        .then(data => console.log('Server Response:', data))
-        .catch(error => console.error('Error:', error));
+        });
+        const data = await response.text();
+        console.log('Server Response:', data);
+    } catch (error) {
+        console.error('Error:', error);
     }
 }
 

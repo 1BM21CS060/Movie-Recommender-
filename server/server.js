@@ -2,40 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
-const mongoose = require('mongoose');
-
-// MongoDB connection function
-const connectDB = async () => {
-    try {
-        await mongoose.connect('mongodb+srv://shashankvasista0:3z2GbJGilfXVDOID@cluster0.xt8dcep.mongodb.net/movieRecommender?retryWrites=true&w=majority&appName=Cluster0', {
-            useNewUrlParser: true,
-            useUnifiedTopology: true
-        });
-        console.log('MongoDB connected');
-    } catch (error) {
-        console.error('Error connecting to MongoDB:', error);
-        process.exit(1);
-    }
-};
-
-// Define schemas
-const userInputSchema = new mongoose.Schema({
-    keywords: {
-        type: String,
-        required: true
-    }
-});
-
-const movieTitleSchema = new mongoose.Schema({
-    title: {
-        type: String,
-        required: true
-    }
-});
-
-// Define models
-const Searches = mongoose.model('Searches', userInputSchema);
-const Recommendations = mongoose.model('Recommendations', movieTitleSchema);
+const { connectDB, collections, collections1 } = require('./db');
 
 const app = express();
 
@@ -61,8 +28,8 @@ app.post('/', async (req, res) => {
     }
 
     try {
-        const data = { keywords: query }; // Ensure 'keywords' field is used
-        await Searches.create(data); // Use `create` to save document
+        const data = { keywords: query };
+        await collections.create(data);
         res.status(201).send('Data saved');
     } catch (error) {
         console.error(error);
@@ -79,21 +46,17 @@ app.post('/save-recommendations', async (req, res) => {
     }
 
     try {
-        // Remove duplicates from the movieTitles array
         const uniqueTitles = [...new Set(movieTitles)];
 
-        // Prepare bulk operations
         const operations = uniqueTitles.map(title => ({
             updateOne: {
                 filter: { title },
                 update: { $setOnInsert: { title } },
-                upsert: true
-            }
+                upsert: true,
+            },
         }));
 
-        // Perform bulk write operation
-        await Recommendations.bulkWrite(operations);
-
+        await collections1.bulkWrite(operations);
         res.status(201).send('Recommendations saved');
     } catch (error) {
         console.error(error);
@@ -107,8 +70,7 @@ app.get('/', (req, res) => {
 });
 
 // Start the server
-app.listen(3001, () => {
-    console.log('App is running on port 3001');
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+    console.log(`App is running on port ${PORT}`);
 });
-
-module.exports = { connectDB, Searches, Recommendations };
