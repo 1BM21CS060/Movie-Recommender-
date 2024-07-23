@@ -1,8 +1,41 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const path = require('path'); // Import path module
-const { connectDB, collections, collections1 } = require('./db');
+const path = require('path');
+const mongoose = require('mongoose');
+
+// MongoDB connection function
+const connectDB = async () => {
+    try {
+        await mongoose.connect('mongodb+srv://shashankvasista0:3z2GbJGilfXVDOID@cluster0.xt8dcep.mongodb.net/movieRecommender?retryWrites=true&w=majority&appName=Cluster0', {
+            useNewUrlParser: true,
+            useUnifiedTopology: true
+        });
+        console.log('MongoDB connected');
+    } catch (error) {
+        console.error('Error connecting to MongoDB:', error);
+        process.exit(1);
+    }
+};
+
+// Define schemas
+const userInputSchema = new mongoose.Schema({
+    keywords: {
+        type: String,
+        required: true
+    }
+});
+
+const movieTitleSchema = new mongoose.Schema({
+    title: {
+        type: String,
+        required: true
+    }
+});
+
+// Define models
+const Searches = mongoose.model('Searches', userInputSchema);
+const Recommendations = mongoose.model('Recommendations', movieTitleSchema);
 
 const app = express();
 
@@ -29,7 +62,7 @@ app.post('/', async (req, res) => {
 
     try {
         const data = { keywords: query }; // Ensure 'keywords' field is used
-        await collections.create(data); // Use `create` to save document
+        await Searches.create(data); // Use `create` to save document
         res.status(201).send('Data saved');
     } catch (error) {
         console.error(error);
@@ -59,7 +92,7 @@ app.post('/save-recommendations', async (req, res) => {
         }));
 
         // Perform bulk write operation
-        await collections1.bulkWrite(operations);
+        await Recommendations.bulkWrite(operations);
 
         res.status(201).send('Recommendations saved');
     } catch (error) {
@@ -77,3 +110,5 @@ app.get('/', (req, res) => {
 app.listen(3001, () => {
     console.log('App is running on port 3001');
 });
+
+module.exports = { connectDB, Searches, Recommendations };
