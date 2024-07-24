@@ -1,8 +1,8 @@
 const OMDB_API_KEY = 'ee4ab4f7';
-const OPENAI_API_KEY = 'sk-proj-lBS2hiMZY7MuHRq3Lz4ZT3BlbkFJAwttK6oLwGqHL8nWYRv';
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 // Replace with your Vercel backend URL
-const BACKEND_URL = 'https://your-vercel-project.vercel.app';
+const BACKEND_URL = 'https://airecommender-95idyr6rl-shashanks-projects-d6066632.vercel.app';
 
 let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
 let watched = JSON.parse(localStorage.getItem('watched')) || [];

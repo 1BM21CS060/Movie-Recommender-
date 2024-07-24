@@ -51,3 +51,4 @@ coverage/
 !db.js
 !public/style.css
 !public/script.js
+.vercel
