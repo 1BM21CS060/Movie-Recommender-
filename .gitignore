@@ -1,0 +1,54 @@
+# Node.js dependencies
+/node_modules
+
+# Build output
+/dist
+/build
+
+# Environment variables
+.env
+
+# Logs
+*.log
+logs/
+
+# Dependency directories
+jspm_packages/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# IDE-specific files
+.vscode/
+.idea/
+
+# Runtime files
+pids/
+*.pid
+*.seed
+
+# Miscellaneous
+*.swp
+*.swo
+
+# MongoDB local database files
+*.db
+
+# Frontend build artifacts
+*.css
+*.js
+
+# Tests
+coverage/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Explicitly unignore specific files
+!server.js
+!db.js
+!public/style.css
+!public/script.js
+.vercel
