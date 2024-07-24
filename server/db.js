@@ -1,11 +1,22 @@
 const mongoose = require('mongoose');
 
+// Load environment variables from a .env file if available
+require('dotenv').config();
+
 const connectDB = async () => {
     try {
-        await mongoose.connect('mongodb+srv://user:123@cluster0.sxs5sms.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0');
-        console.log('Mongodb connected');
+        // Retrieve MongoDB URI from environment variables
+        const mongoURI = process.env.MONGODB_URI;
+        if (!mongoURI) {
+            throw new Error('MONGODB_URI is not defined in environment variables');
+        }
+        await mongoose.connect(mongoURI, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+        });
+        console.log('MongoDB connected');
     } catch (error) {
-        console.error(error);
+        console.error('Error connecting to MongoDB:', error);
         process.exit(1);
     }
 };
@@ -13,8 +24,8 @@ const connectDB = async () => {
 const userInputSchema = new mongoose.Schema({
     keywords: {
         type: String,
-        required:true
-    }
+        required: true,
+    },
 });
 
 const movieTitleSchema = new mongoose.Schema({
@@ -24,4 +35,4 @@ const movieTitleSchema = new mongoose.Schema({
 const collections = mongoose.model('userInputs', userInputSchema);
 const collections1 = mongoose.model('recommendedMovieNames', movieTitleSchema);
 
-module.exports = { connectDB, collections, collections1};
+module.exports = { connectDB, collections, collections1 };

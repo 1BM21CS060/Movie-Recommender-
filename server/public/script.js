@@ -1,5 +1,8 @@
 const OMDB_API_KEY = 'ee4ab4f7';
-const OPENAI_API_KEY = 'sk-proj-lBS2hiMZY7MuHRq3Lz4ZT3BlbkFJAwttK6oLwGqHL8nWYRvz';
+const OPENAI_API_KEY = 'sk-proj-lBS2hiMZY7MuHRq3Lz4ZT3BlbkFJAwttK6oLwGqHL8nWYRv';
+
+// Replace with your Vercel backend URL
+const BACKEND_URL = 'https://your-vercel-project.vercel.app';
 
 let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
 let watched = JSON.parse(localStorage.getItem('watched')) || [];
@@ -21,7 +24,7 @@ async function getRecommendations() {
 
     try {
         // Save user input to the server
-        await axios.post('http://localhost:3001/', { query });
+        await axios.post(`${BACKEND_URL}/`, { query });
 
         const openAIRecommendations = await getOpenAIRecommendations(query);
         const movieTitles = extractMovieTitles(openAIRecommendations);
@@ -114,7 +117,7 @@ function displayRecommendations(aiRecommendations, movieDetails) {
 
     // Send movie titles to the server
     if (movieTitles.length > 0) {
-        fetch('/save-recommendations', {
+        fetch(`${BACKEND_URL}/save-recommendations`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -126,7 +129,6 @@ function displayRecommendations(aiRecommendations, movieDetails) {
         .catch(error => console.error('Error:', error));
     }
 }
-
 
 function toggleFavorite(imdbID) {
     const index = favorites.indexOf(imdbID);
@@ -160,6 +162,7 @@ function clearResults() {
     document.getElementById('recommendations').innerHTML = '';
     document.getElementById('error-details').innerHTML = '';
 }
+
 // Infinite scroll
 window.addEventListener('scroll', () => {
     if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500 && !isLoading) {
@@ -173,6 +176,6 @@ document.addEventListener('DOMContentLoaded', () => {
     searchInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             getRecommendations();
-        }
-    });
+        }
+    });
 });
