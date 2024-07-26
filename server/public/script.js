@@ -1,66 +1,109 @@
 const OMDB_API_KEY = 'ee4ab4f7';
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const OPENAI_API_KEY = 'sk-proj-e2zqHnu5AaNl8tgo9E6pT3BlbkFJlBQ2jrIPeb2VLceIoeHP';
 
-// Replace with your Vercel backend URL
-const BACKEND_URL = 'https://airecommender-95idyr6rl-shashanks-projects-d6066632.vercel.app';
+let currentPage = 1;
+let totalMovies = 0;
+let isLoading = false;
+let allMovies = new Set();
+let lastQuery = '';
 
-let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
-let watched = JSON.parse(localStorage.getItem('watched')) || [];
-
-async function getRecommendations() {
+async function getRecommendations(isInitialLoad = true) {
     const query = document.getElementById('movie-query').value.trim();
     const recommendationsDiv = document.getElementById('recommendations');
     const errorDetailsDiv = document.getElementById('error-details');
     const loadingDiv = document.getElementById('loading');
+    const maxResultsMessage = document.getElementById('max-results-message');
+    const noResultsMessage = document.getElementById('no-results-message');
 
     if (!query) {
         showError('Please enter movie keywords.');
         return;
     }
 
-    recommendationsDiv.innerHTML = '';
-    errorDetailsDiv.innerHTML = '';
+    if (isInitialLoad) {
+        recommendationsDiv.innerHTML = '';
+        errorDetailsDiv.innerHTML = '';
+        maxResultsMessage.classList.add('hidden');
+        noResultsMessage.classList.add('hidden');
+        currentPage = 1;
+        totalMovies = 0;
+        allMovies.clear();
+        lastQuery = query;
+
+        // Save user input
+        await saveUserInput(query);
+    }
+
+    if (query !== lastQuery) {
+        showError('Please use the search button for a new query.');
+        return;
+    }
+
     loadingDiv.style.display = 'flex';
+    isLoading = true;
 
     try {
-        // Save user input to the server
-        await axios.post(`${BACKEND_URL}/`, { query });
-
         const openAIRecommendations = await getOpenAIRecommendations(query);
         const movieTitles = extractMovieTitles(openAIRecommendations);
         const movieDetails = await Promise.all(movieTitles.map(title => getOMDBDetails(title)));
-        displayRecommendations(openAIRecommendations, movieDetails);
+
+        const uniqueMovies = movieDetails.filter(movie => movie.Response === "True" && !allMovies.has(movie.imdbID));
+        uniqueMovies.forEach(movie => allMovies.add(movie.imdbID));
+
+        if (uniqueMovies.length === 0) {
+            if (isInitialLoad) {
+                noResultsMessage.classList.remove('hidden');
+            }
+            return;
+        }
+
+        displayRecommendations(uniqueMovies);
+        totalMovies += uniqueMovies.length;
+
+        if (totalMovies >= 100) {
+            maxResultsMessage.classList.remove('hidden');
+            window.removeEventListener('scroll', handleScroll);
+        }
+
+        // Save recommended movies
+        const titlesToSave = uniqueMovies.map(movie => movie.Title);
+        await saveRecommendations(titlesToSave);
+
     } catch (error) {
         console.error('Error:', error);
         showError(`An error occurred: ${error.message}`);
     } finally {
         loadingDiv.style.display = 'none';
+        isLoading = false;
     }
 }
 
 async function getOpenAIRecommendations(query) {
-    const response = await axios.post('https://api.openai.com/v1/chat/completions', {
-        model: "gpt-4o-mini",
-        messages: [
-            {
-                role: "system",
-                content: "You are a knowledgeable movie recommendation assistant. Provide detailed, personalized movie recommendations based on the user's input. For each recommendation, include the movie title, year, and a brief explanation of why it's recommended. Recommend 15 movies. Do not use asterisks or any other special formatting in your response."
-            },
-            {
-                role: "user",
-                content: `Based on the following preferences, recommend 15 movies: ${query}`
-            }
-        ],
-        temperature: 0.7,
-        max_tokens: 2000,
-    }, {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
         headers: {
             'Authorization': `Bearer ${OPENAI_API_KEY}`,
-            'Content-Type': 'application/json'
-        }
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            model: "gpt-4o-mini",
+            messages: [
+                {
+                    role: "system",
+                    content: "You are a knowledgeable movie recommendation assistant. Provide detailed, personalized movie recommendations based on the user's input. For each recommendation, include only the movie title and year. Recommend 20 unique movies. Do not use asterisks or any other special formatting in your response."
+                },
+                {
+                    role: "user",
+                    content: `Based on the following preferences, recommend 20 unique movies: ${query}`
+                }
+            ],
+            temperature: 0.7,
+            max_tokens: 2000,
+        }),
     });
 
-    return response.data.choices[0].message.content;
+    const data = await response.json();
+    return data.choices[0].message.content;
 }
 
 function extractMovieTitles(recommendations) {
@@ -68,114 +111,130 @@ function extractMovieTitles(recommendations) {
     const titles = [];
     let match;
     while ((match = regex.exec(recommendations)) !== null) {
-        titles.push({ title: match[1].replace(/\*/g, ''), year: match[2] });
+        titles.push({ title: match[1].replace(/\*/g, '').trim(), year: match[2] });
     }
     return titles;
 }
 
 async function getOMDBDetails(movie) {
-    const response = await axios.get(`https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&t=${encodeURIComponent(movie.title)}&y=${movie.year}`);
-    return response.data;
+    const response = await fetch(`https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&t=${encodeURIComponent(movie.title)}&y=${movie.year}&plot=full`);
+    return await response.json();
 }
 
-function displayRecommendations(aiRecommendations, movieDetails) {
+function displayRecommendations(movies) {
     const recommendationsDiv = document.getElementById('recommendations');
-    const recommendations = aiRecommendations.split(/\d+\./);
 
-    const movieTitles = []; // Array to store movie titles
-
-    movieDetails.forEach((movie, index) => {
-        if (movie.Response === "True" && index < recommendations.length - 1) {
-            const aiRecommendation = recommendations[index + 1].trim().replace(/\*/g, '');
-            movieTitles.push(movie.Title); // Collect movie titles
-            
-            const movieDiv = document.createElement('div');
-            movieDiv.className = 'movie';
-            movieDiv.innerHTML = `
-                <div class="movie-header">
-                    <div class="movie-poster">
-                        <img src="${movie.Poster !== 'N/A' ? movie.Poster : 'https://via.placeholder.com/150x225.png?text=No+Poster'}" alt="${movie.Title} Poster">
-                    </div>
-                    <div class="movie-title">
-                        <h2>${movie.Title} (${movie.Year})</h2>
-                        <p><i class="fas fa-user-tie"></i> <strong>Director:</strong> ${movie.Director}</p>
-                        <p><i class="fas fa-film"></i> <strong>Genre:</strong> ${movie.Genre}</p>
-                        <p><i class="fas fa-star"></i> <strong>IMDb Rating:</strong> ${movie.imdbRating}</p>
-                        <a href="https://www.imdb.com/title/${movie.imdbID}" target="_blank"><i class="fab fa-imdb"></i> View on IMDb</a>
-                        <button onclick="toggleFavorite('${movie.imdbID}')"><i class="fas fa-heart"></i> ${favorites.includes(movie.imdbID) ? 'Remove from Favorites' : 'Add to Favorites'}</button>
-                        <button onclick="toggleWatched('${movie.imdbID}')"><i class="fas fa-eye"></i> ${watched.includes(movie.imdbID) ? 'Mark as Unwatched' : 'Mark as Watched'}</button>
-                    </div>
+    movies.forEach((movie) => {
+        const movieDiv = document.createElement('div');
+        movieDiv.className = 'movie';
+        movieDiv.innerHTML = `
+            <div class="movie-header">
+                <div class="movie-poster">
+                    <img src="${movie.Poster !== 'N/A' ? movie.Poster : 'https://via.placeholder.com/150x225.png?text=No+Poster'}" alt="${movie.Title} Poster">
                 </div>
-                <p><i class="fas fa-ai"></i> <strong>AI Recommendation:</strong> ${aiRecommendation}</p>
+                <div class="movie-title">
+                    <h2>${movie.Title} (${movie.Year})</h2>
+                    <p><i class="fas fa-user-tie"></i> <strong>Director:</strong> ${movie.Director}</p>
+                    <p><i class="fas fa-film"></i> <strong>Genre:</strong> ${movie.Genre}</p>
+                    <p><i class="fas fa-star"></i> <strong>IMDb Rating:</strong> ${movie.imdbRating}</p>
+                    <a href="https://www.imdb.com/title/${movie.imdbID}" target="_blank"><i class="fab fa-imdb"></i> View on IMDb</a>
+                </div>
+            </div>
+            <div class="movie-plot">
                 <p><i class="fas fa-info-circle"></i> <strong>Plot:</strong> ${movie.Plot}</p>
-            `;
-            recommendationsDiv.appendChild(movieDiv);
-        } else {
-            console.error(`Movie not found or no AI recommendation: ${movie.Error || 'Unknown error'}`);
-        }
+            </div>
+        `;
+        recommendationsDiv.appendChild(movieDiv);
     });
+}
 
-    // Send movie titles to the server
-    if (movieTitles.length > 0) {
-        fetch(`${BACKEND_URL}/save-recommendations`, {
+async function saveUserInput(query) {
+    try {
+        const response = await fetch('/save-user-input', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ query }),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText);
+        }
+
+        console.log('User input saved');
+    } catch (error) {
+        console.error('Error saving user input:', error.message);
+    }
+}
+
+async function saveRecommendations(movieTitles) {
+    try {
+        const response = await fetch('/save-recommendations', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({ movieTitles }),
-        })
-        .then(response => response.text())
-        .then(data => console.log('Server Response:', data))
-        .catch(error => console.error('Error:', error));
-    }
-}
+        });
 
-function toggleFavorite(imdbID) {
-    const index = favorites.indexOf(imdbID);
-    if (index > -1) {
-        favorites.splice(index, 1);
-    } else {
-        favorites.push(imdbID);
-    }
-    localStorage.setItem('favorites', JSON.stringify(favorites));
-    getRecommendations(); // Refresh the display
-}
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText);
+        }
 
-function toggleWatched(imdbID) {
-    const index = watched.indexOf(imdbID);
-    if (index > -1) {
-        watched.splice(index, 1);
-    } else {
-        watched.push(imdbID);
+        console.log('Recommendations saved');
+    } catch (error) {
+        console.error('Error saving recommendations:', error.message);
     }
-    localStorage.setItem('watched', JSON.stringify(watched));
-    getRecommendations(); // Refresh the display
 }
 
 function showError(message) {
     const errorDetailsDiv = document.getElementById('error-details');
-    errorDetailsDiv.innerHTML = `<p class="error"><i class="fas fa-exclamation-circle"></i> ${message}</p>`;
+    errorDetailsDiv.innerHTML = `<p><i class="fas fa-exclamation-circle"></i> ${message}</p>`;
 }
 
 function clearResults() {
     document.getElementById('movie-query').value = '';
     document.getElementById('recommendations').innerHTML = '';
     document.getElementById('error-details').innerHTML = '';
+    document.getElementById('max-results-message').classList.add('hidden');
+    document.getElementById('no-results-message').classList.add('hidden');
+    currentPage = 1;
+    totalMovies = 0;
+    allMovies.clear();
+    lastQuery = '';
+    window.addEventListener('scroll', handleScroll);
 }
 
-// Infinite scroll
-window.addEventListener('scroll', () => {
-    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500 && !isLoading) {
-        loadMoreMovies();
-    }
-});
+function handleScroll() {
+    if (isLoading || totalMovies >= 100) return;
 
-// Initial load
-document.addEventListener('DOMContentLoaded', () => {
-    const searchInput = document.getElementById('movie-query');
-    searchInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            getRecommendations();
-        }
-    });
-});
+    const scrollPosition = window.innerHeight + window.scrollY;
+    const bodyHeight = document.body.offsetHeight;
+    const tenthMoviePosition = document.querySelectorAll('.movie')[9]?.offsetTop;
+
+    if (scrollPosition > tenthMoviePosition && scrollPosition >= bodyHeight - 1000) {
+        currentPage++;
+        getRecommendations(false);
+    }
+}
+
+// Back to Top button functionality
+const backToTopButton = document.getElementById("back-to-top");
+
+window.onscroll = function() {
+    if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+        backToTopButton.style.display = "block";
+    } else {
+        backToTopButton.style.display = "none";
+    }
+};
+
+backToTopButton.onclick = function() {
+    document.body.scrollTop = 0; // For Safari
+    document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
+};
+
+window.addEventListener('scroll', handleScroll);
