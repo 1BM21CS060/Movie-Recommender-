@@ -1,12 +1,11 @@
 const express = require('express');
-const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
-const { connectDB, collections, collections1 } = require('./db');
+const { connectDB, UserInput, MovieTitle } = require('./db');
 
 const app = express();
 
-// Middleware to parse JSON
+// Middleware to parse JSON and URL-encoded data
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -20,19 +19,21 @@ app.use(express.static(path.join(__dirname, 'public')));
 connectDB();
 
 // POST route to handle user input
-app.post('/', async (req, res) => {
+app.post('/save-user-input', async (req, res) => {
     const { query } = req.body;
 
     if (!query) {
+        console.error('Error: Query is required');
         return res.status(400).send('Query is required');
     }
 
     try {
-        const data = { keywords: query };
-        await collections.create(data);
-        res.status(201).send('Data saved');
+        const userInput = new UserInput({ keywords: query });
+        await userInput.save();
+        console.log('User input saved:', userInput);
+        res.status(201).send('User input saved');
     } catch (error) {
-        console.error(error);
+        console.error('Error saving user input:', error.message);
         res.status(500).send('Internal server error');
     }
 });
@@ -41,13 +42,13 @@ app.post('/', async (req, res) => {
 app.post('/save-recommendations', async (req, res) => {
     const { movieTitles } = req.body;
 
-    if (!Array.isArray(movieTitles)) {
-        return res.status(400).send('movieTitles is required');
+    if (!Array.isArray(movieTitles) || movieTitles.length === 0) {
+        console.error('Error: movieTitles is required and should be an array');
+        return res.status(400).send('movieTitles is required and should be an array');
     }
 
     try {
         const uniqueTitles = [...new Set(movieTitles)];
-
         const operations = uniqueTitles.map(title => ({
             updateOne: {
                 filter: { title },
@@ -56,10 +57,11 @@ app.post('/save-recommendations', async (req, res) => {
             },
         }));
 
-        await collections1.bulkWrite(operations);
+        await MovieTitle.bulkWrite(operations);
+        console.log('Recommendations saved:', uniqueTitles);
         res.status(201).send('Recommendations saved');
     } catch (error) {
-        console.error(error);
+        console.error('Error saving recommendations:', error.message);
         res.status(500).send('Internal server error');
     }
 });
